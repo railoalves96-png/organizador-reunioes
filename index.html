@@ -2244,6 +2244,163 @@ button {
     }
 
 }
+
+/* =====================================================
+   USUÁRIO CONECTADO
+===================================================== */
+
+.usuario-firebase {
+
+    position: absolute;
+
+    right: 15px;
+    top: 50%;
+
+    transform:
+        translateY(-50%);
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 8px 10px;
+
+    border-radius: 12px;
+
+    background:
+        rgba(255,255,255,0.12);
+
+    border:
+        1px solid
+        rgba(255,255,255,0.20);
+
+    backdrop-filter:
+        blur(8px);
+
+}
+
+
+.usuario-firebase-info {
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    text-align: left;
+
+}
+
+
+.usuario-firebase-icone {
+
+    font-size: 24px;
+
+}
+
+
+.usuario-firebase-info small {
+
+    display: block;
+
+    font-size: 10px;
+
+    opacity: 0.8;
+
+}
+
+
+.usuario-firebase-info strong {
+
+    display: block;
+
+    font-size: 12px;
+
+    max-width: 180px;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+}
+
+
+.btn-sair-firebase {
+
+    border: none;
+
+    padding: 8px 11px;
+
+    border-radius: 8px;
+
+    background:
+        rgba(220,38,38,0.90);
+
+    color: white;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+
+}
+
+
+.btn-sair-firebase:hover {
+
+    transform:
+        translateY(-1px);
+
+    background:
+        #b91c1c;
+
+}
+
+
+/* TABLET */
+
+@media (max-width: 1000px) {
+
+    .usuario-firebase {
+
+        position: static;
+
+        transform: none;
+
+        margin-left: auto;
+
+    }
+
+}
+
+
+/* CELULAR */
+
+@media (max-width: 700px) {
+
+    .usuario-firebase {
+
+        width: 100%;
+
+        justify-content:
+            space-between;
+
+        margin-top: 8px;
+
+    }
+
+
+    .usuario-firebase-info strong {
+
+        max-width: 190px;
+
+    }
+
+}
 </style>
 </head>
 
@@ -2432,7 +2589,7 @@ button {
             alt="sagrado"
         >
 
-        <div>
+                <div>
 
             <h1>
                 📅 Organizador de Reuniões
@@ -2441,6 +2598,46 @@ button {
             <p>
                 Controle de disponibilidade dos professores e equipe
             </p>
+
+        </div>
+
+
+        <!-- USUÁRIO CONECTADO -->
+
+        <div
+            id="areaUsuarioFirebase"
+            class="usuario-firebase"
+            style="display:none;"
+        >
+
+            <div class="usuario-firebase-info">
+
+                <span class="usuario-firebase-icone">
+                    👤
+                </span>
+
+                <div>
+
+                    <small>
+                        Conectado como
+                    </small>
+
+                    <strong id="emailUsuarioFirebase">
+                        Usuário
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="btn-sair-firebase"
+                onclick="confirmarSaidaFirebase()"
+            >
+                🚪 Sair
+            </button>
 
         </div>
 
@@ -13918,6 +14115,30 @@ async function() {
 
 };
 
+const campoSenhaLogin =
+    document.getElementById(
+        "senhaLoginFirebase"
+    );
+
+
+if (campoSenhaLogin) {
+
+    campoSenhaLogin.addEventListener(
+        "keydown",
+        evento => {
+
+            if (
+                evento.key === "Enter"
+            ) {
+
+                window.fazerLoginFirebase();
+
+            }
+
+        }
+    );
+
+}
 
 /* =====================================================
    OBSERVAR USUÁRIO
@@ -14144,7 +14365,33 @@ onAuthStateChanged(
                 "Usuário autenticado:",
                 usuario.email
             );
-            
+        
+        const areaUsuario =
+            document.getElementById(
+                "areaUsuarioFirebase"
+            );
+
+
+        const emailUsuario =
+            document.getElementById(
+                "emailUsuarioFirebase"
+            );
+
+
+        if (emailUsuario) {
+
+            emailUsuario.textContent =
+            usuario.email || "Usuário";
+
+        }
+
+
+        if (areaUsuario) {
+
+            areaUsuario.style.display =
+                "flex";
+
+        }
             await iniciarSincronizacaoFirebase();
 
             if (telaLogin) {
@@ -14177,11 +14424,40 @@ onAuthStateChanged(
 
             }
 
+            const areaUsuario =
+                document.getElementById(
+                    "areaUsuarioFirebase"
+            );
+
+            if (areaUsuario) {
+
+                areaUsuario.style.display =
+                    "none";
+
+            }
+
         }
 
     }
 );
 
+window.confirmarSaidaFirebase =
+async function() {
+
+    const confirmou =
+        confirm(
+            "Deseja realmente sair do sistema?"
+        );
+
+
+    if (!confirmou) {
+        return;
+    }
+
+
+    await window.sairFirebase();
+
+};
 
 /* =====================================================
    SAIR
