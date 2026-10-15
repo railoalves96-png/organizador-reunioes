@@ -2438,6 +2438,46 @@ body:not(.usuario-admin) .somente-admin {
     display: none !important;
 }
 
+/* =====================================================
+   MODO CONSULTA
+===================================================== */
+
+.aviso-modo-consulta {
+    display: none;
+
+    align-items: center;
+    gap: 12px;
+
+    margin-bottom: 20px;
+    padding: 14px 18px;
+
+    background: #eff6ff;
+    border: 1px solid #93c5fd;
+    border-left: 5px solid #2563eb;
+
+    border-radius: 10px;
+
+    color: #1e40af;
+}
+
+.aviso-modo-consulta-icone {
+    font-size: 25px;
+}
+
+.aviso-modo-consulta strong {
+    display: block;
+    margin-bottom: 3px;
+}
+
+.aviso-modo-consulta span {
+    font-size: 14px;
+    color: #475569;
+}
+
+body.usuario-comum .aviso-modo-consulta {
+    display: flex;
+}
+
 </style>
 </head>
 
@@ -2659,9 +2699,13 @@ body:not(.usuario-admin) .somente-admin {
                         Conectado como
                     </small>
 
-                    <strong id="emailUsuarioFirebase">
+                    <strong id="nomeUsuarioFirebase">
                         Usuário
                     </strong>
+
+                    <small id="emailUsuarioFirebase">
+                        email@exemplo.com
+                    </small>
 
                     <span
                         id="nivelUsuarioFirebase"
@@ -2741,6 +2785,32 @@ body:not(.usuario-admin) .somente-admin {
         >
             💾 Backup
         </button>
+
+        <button
+            class="somente-admin"
+            onclick="abrirPagina('usuarios', this)"
+        >
+            👥 Usuários do Sistema
+        </button>
+
+    </div>
+
+        <div class="aviso-modo-consulta">
+
+        <div class="aviso-modo-consulta-icone">
+            👁️
+        </div>
+
+        <div>
+            <strong>
+                Modo Consulta
+            </strong>
+
+            <span>
+                Você possui acesso para visualizar as informações do sistema.
+                Alterações são restritas aos administradores.
+            </span>
+        </div>
 
     </div>
 
@@ -3772,6 +3842,33 @@ body:not(.usuario-admin) .somente-admin {
 </div>
 
 <!-- =====================================================
+     USUÁRIOS DO SISTEMA
+===================================================== -->
+
+<div id="usuarios" class="pagina">
+
+    <div class="card">
+
+        <h2>👥 Usuários do Sistema</h2>
+
+        <p style="color:#64748b;">
+            Gerencie os usuários autorizados a acessar o sistema.
+        </p>
+
+        <div
+            id="listaUsuariosSistema"
+            style="margin-top:20px;"
+        >
+            <div class="vazio">
+                Carregando usuários...
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- =====================================================
      CALENDÁRIO INTELIGENTE DE SELEÇÃO
 ===================================================== -->
 
@@ -4644,6 +4741,18 @@ window.aplicarDadosDoFirebase =
 
 function salvarDados() {
 
+    if (
+        window.perfilUsuarioFirebase &&
+        window.usuarioEhAdmin !== true
+    ) {
+
+        console.warn(
+            "Gravação bloqueada: usuário em modo consulta."
+        );
+
+        return;
+    }
+
     localStorage.setItem(
         "pessoasReuniao",
         JSON.stringify(pessoas)
@@ -4708,6 +4817,138 @@ function abrirNovaReuniao(botao) {
 
 }
 
+/* =====================================================
+   USUÁRIOS DO SISTEMA
+===================================================== */
+
+async function renderizarUsuariosSistema() {
+
+    if (!exigirAdministrador()) return;
+
+    const lista =
+        document.getElementById(
+            "listaUsuariosSistema"
+        );
+
+    if (!lista) return;
+
+    lista.innerHTML = `
+        <div class="vazio">
+            Carregando usuários...
+        </div>
+    `;
+
+    try {
+
+        const referenciaUsuarios =
+            collection(
+                dbFirebase,
+                "usuarios"
+            );
+
+        const snapshotUsuarios =
+            await getDocs(
+                referenciaUsuarios
+            );
+
+        if (snapshotUsuarios.empty) {
+
+            lista.innerHTML = `
+                <div class="vazio">
+                    Nenhum usuário cadastrado.
+                </div>
+            `;
+
+            return;
+        }
+
+        let html = "";
+
+        snapshotUsuarios.forEach(
+            documento => {
+
+                const usuario =
+                    documento.data();
+
+                const nome =
+                    usuario.nome ||
+                    "Usuário";
+
+                const email =
+                    usuario.email ||
+                    "Sem e-mail";
+
+                const nivel =
+                    usuario.nivel === "admin"
+                        ? "👑 Administrador"
+                        : "👤 Usuário";
+
+                const status =
+                    usuario.ativo === true
+                        ? "🟢 Ativo"
+                        : "🔴 Inativo";
+
+                html += `
+                    <div
+                        class="pessoa-card"
+                        style="
+                            margin-bottom:12px;
+                        "
+                    >
+
+                        <h3>
+                            ${nome}
+                        </h3>
+
+                        <div class="cargo">
+                            📧 ${email}
+                        </div>
+
+                        <div
+                            style="
+                                display:flex;
+                                gap:10px;
+                                flex-wrap:wrap;
+                            "
+                        >
+
+                            <span>
+                                ${nivel}
+                            </span>
+
+                            <span>
+                                ${status}
+                            </span>
+
+                        </div>
+
+                    </div>
+                `;
+
+            }
+        );
+
+        lista.innerHTML = html;
+
+    } catch (erro) {
+
+        console.error(
+            "Erro ao carregar usuários:",
+            erro
+        );
+
+        lista.innerHTML = `
+            <div
+                class="resultado erro"
+            >
+                ❌ Não foi possível carregar
+                os usuários do sistema.
+            </div>
+        `;
+
+    }
+
+}
 /* =========================================
    SELECIONAR EQUIPE NOS PARTICIPANTES
 ========================================= */
@@ -4758,7 +4999,8 @@ function abrirPagina(id, botao) {
         "cadastro",
         "reuniao",
         "datasEspeciais",
-        "backup"
+        "backup",
+        "usuarios"
     ];
 
     if (
@@ -4776,6 +5018,7 @@ function abrirPagina(id, botao) {
     document.getElementById(id)
         .classList.add("ativa");
 
+        
     document.querySelectorAll(".menu button")
         .forEach(b => {
             b.classList.remove("ativo");
@@ -4810,6 +5053,11 @@ if (id === "datasEspeciais") {
     prepararAnosRelatorio();
 
     renderizarRelatorioDatasEspeciais();
+
+}
+if (id === "usuarios") {
+
+    renderizarUsuariosSistema();
 
 }
 }
@@ -14077,7 +14325,9 @@ import {
     getDoc,
     setDoc,
     onSnapshot,
-    serverTimestamp
+    serverTimestamp,
+    collection,
+    getDocs
 }
 from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
@@ -14224,6 +14474,32 @@ const referenciaDadosFirebase =
 
         };
 
+        const nomeUsuario =
+            document.getElementById(
+                "nomeUsuarioFirebase"
+            );
+
+        const emailUsuario =
+            document.getElementById(
+                "emailUsuarioFirebase"
+            );
+
+
+        if (nomeUsuario) {
+
+            nomeUsuario.textContent =
+                perfilUsuarioFirebase.nome;
+
+        }
+
+
+        if (emailUsuario) {
+
+            emailUsuario.textContent =
+                perfilUsuarioFirebase.email;
+
+        }
+
 
         window.perfilUsuarioFirebase =
             perfilUsuarioFirebase;
@@ -14233,10 +14509,15 @@ const referenciaDadosFirebase =
             perfilUsuarioFirebase.nivel ===
             "admin";
 
-            document.body.classList.toggle(
-        "usuario-admin",
-        window.usuarioEhAdmin
-    );
+        document.body.classList.toggle(
+            "usuario-admin",
+            window.usuarioEhAdmin
+        );
+
+        document.body.classList.toggle(
+            "usuario-comum",
+            !window.usuarioEhAdmin
+        );
 
 
 /* Usuário comum sempre entra na página inicial */
@@ -14432,7 +14713,8 @@ function() {
 
     if (
         !firebaseProntoParaSalvar ||
-        !authFirebase.currentUser
+        !authFirebase.currentUser ||
+        window.usuarioEhAdmin !== true
     ) {
         return;
     }
@@ -14652,20 +14934,6 @@ onAuthStateChanged(
             );
 
 
-        const emailUsuario =
-            document.getElementById(
-                "emailUsuarioFirebase"
-            );
-
-
-        if (emailUsuario) {
-
-            emailUsuario.textContent =
-            usuario.email || "Usuário";
-
-        }
-
-
         try {
 
     await carregarPerfilUsuarioFirebase(
@@ -14742,6 +15010,10 @@ await iniciarSincronizacaoFirebase();
             
             document.body.classList.remove(
                 "usuario-admin"
+            );
+
+            document.body.classList.remove(
+                "usuario-comum"
             );
 
             if (pararEscutaFirebase) {
